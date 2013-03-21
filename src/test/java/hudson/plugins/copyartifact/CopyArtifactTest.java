@@ -84,7 +84,7 @@ public class CopyArtifactTest extends HudsonTestCase {
             throws IOException {
         FreeStyleProject p = createFreeStyleProject();
         p.getBuildersList().add(new CopyArtifact(otherProject, parameters,
-                new StatusBuildSelector(stable), filter, target, flatten, optional));
+                new StatusBuildSelector(stable), filter, target, flatten, optional, Boolean.FALSE));
         return p;
     }
 

@@ -92,6 +92,11 @@ public class CopyArtifact extends Builder {
     @Deprecated private transient Boolean stable;
     private final Boolean flatten, optional, unpackzip;
 
+    public CopyArtifact(String projectName, String parameters, BuildSelector selector, String filter, String target,
+                        boolean flatten, boolean optional) {
+        this(projectName, parameters, selector, filter, target, flatten, optional, false);
+    }
+
     @DataBoundConstructor
     public CopyArtifact(String projectName, String parameters, BuildSelector selector, String filter, String target,
                         boolean flatten, boolean optional, boolean unpackzip) {
