@@ -59,6 +59,7 @@ import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import hudson.util.XStream2;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Collections;
@@ -89,11 +90,11 @@ public class CopyArtifact extends Builder {
     private final String filter, target;
     private /*almost final*/ BuildSelector selector;
     @Deprecated private transient Boolean stable;
-    private final Boolean flatten, optional;
+    private final Boolean flatten, optional, unpackzip;
 
     @DataBoundConstructor
     public CopyArtifact(String projectName, String parameters, BuildSelector selector, String filter, String target,
-                        boolean flatten, boolean optional) {
+                        boolean flatten, boolean optional, boolean unpackzip) {
         // check the permissions only if we can
         StaplerRequest req = Stapler.getCurrentRequest();
         if (req!=null) {
@@ -113,6 +114,7 @@ public class CopyArtifact extends Builder {
         this.target = Util.fixNull(target).trim();
         this.flatten = flatten ? Boolean.TRUE : null;
         this.optional = optional ? Boolean.TRUE : null;
+        this.unpackzip = unpackzip ? Boolean.TRUE : null;
     }
 
     // Upgrade data from old format
@@ -152,6 +154,10 @@ public class CopyArtifact extends Builder {
 
     public boolean isOptional() {
         return optional != null && optional;
+    }
+
+    public boolean isUnpackZip() {
+        return unpackzip != null && unpackzip;
     }
 
     @Override
@@ -231,7 +237,16 @@ public class CopyArtifact extends Builder {
                                   baseTargetDir, copier, console);
                 return ok;
             } else {
-                return perform(src, build, expandedFilter, targetDir, baseTargetDir, copier, console);
+                boolean res = perform(src, build, expandedFilter, targetDir, baseTargetDir, copier, console);
+                if (res && isUnpackZip())
+                {
+                    //TODO: move to others
+                    FilePath srcZip = build.getWorkspace().child(target).child(filter);
+                    FilePath outDir = build.getWorkspace().child(target);
+                    console.println("Unpacking zip file "+srcZip+" to "+outDir);
+                    srcZip.unzip(outDir);
+                }
+                return res;
             }
         }
         catch (IOException ex) {
@@ -356,7 +371,8 @@ public class CopyArtifact extends Builder {
                 r.addAction(new EnvAction());
         }
     }
-    
+
+
     private static class EnvAction implements EnvironmentContributingAction {
         // Decided not to record this data in build.xml, so marked transient:
         private transient Map<String,String> data = new HashMap<String,String>();
